@@ -12,6 +12,7 @@
     "@aspida/axios": "^0.5.2",
     "@types/js-cookie": "^2.2.6",
     "aspida": "^0.15.2",
+    "axios": "^0.19.2",
     "bootstrap": "^4.5.0",
     "bootstrap-vue": "^2.14.0",
     "core-js": "^3.6.4",
