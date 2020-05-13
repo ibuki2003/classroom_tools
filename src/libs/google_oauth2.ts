@@ -51,7 +51,7 @@ export function parse_response_hash(hash: string) {
   )
     return false;
   const expires = new Date(
-    +new Date() + Number.parseInt(expires_in)
+    +new Date() + Number.parseInt(expires_in) * 1000
   ).toString();
   jscookie.set("google_token", { token, token_type, expires } as TokenCookie);
 
