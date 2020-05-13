@@ -19,3 +19,8 @@ export interface Course {
   guardiansEnabled: boolean;
   calendarId: string;
 }
+
+export const use_scopes: string[] = [
+  "https://www.googleapis.com/auth/userinfo.profile",
+  "https://www.googleapis.com/auth/classroom.courses.readonly"
+];
