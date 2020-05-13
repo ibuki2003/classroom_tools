@@ -8,6 +8,12 @@ const routes: Array<RouteConfig> = [
     path: "/",
     name: "Home",
     component: () => import(/* webpackChunkName: "Home" */ "@/views/Home.vue")
+  },
+  {
+    path: "/authed",
+    name: "authed",
+    component: () =>
+      import(/* webpackChunkName: "authed" */ "@/views/authed.vue")
   }
 ];
 
