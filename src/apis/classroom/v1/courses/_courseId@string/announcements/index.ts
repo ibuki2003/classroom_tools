@@ -1,5 +1,5 @@
 import { AnnouncementState, Announcement } from "./@types";
-import { AuthorizationHeader } from "../../../../@types";
+import { AuthorizationHeader } from "../../../../../@types";
 
 export interface Methods {
   get: {

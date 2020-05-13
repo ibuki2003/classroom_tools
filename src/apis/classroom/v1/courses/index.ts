@@ -1,5 +1,5 @@
 import { CourseState, Course } from "./@types";
-import { AuthorizationHeader } from "../../@types";
+import { AuthorizationHeader } from "../../../@types";
 
 export interface Methods {
   get: {
