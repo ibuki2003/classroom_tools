@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "bootstrap": "^4.5.0",
+    "bootstrap-vue": "^2.14.0",
     "core-js": "^3.6.4",
     "googleapis": "^50.0.0",
     "vue": "^2.6.11",
