@@ -18,6 +18,7 @@
     "core-js": "^3.6.4",
     "googleapis": "^50.0.0",
     "js-cookie": "^2.2.1",
+    "moment": "^2.25.3",
     "vue": "^2.6.11",
     "vue-class-component": "^7.2.3",
     "vue-mixin-decorator": "^1.2.0",
