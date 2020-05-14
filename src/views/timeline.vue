@@ -125,10 +125,13 @@ export default class Timeline extends Vue {
       .then(a => Promise.allSettled(a))
       .then(() => {
         this.pending = false;
-        this.cards.sort((a, b) =>
-          moment(b.content.updateTime).diff(moment(a.content.updateTime))
-        );
       });
+  }
+
+  sort_cards() {
+    this.cards.sort((a, b) =>
+      moment(b.content.updateTime).diff(moment(a.content.updateTime))
+    );
   }
 
   get_course_annoucements(course_id: string, token: string) {
@@ -147,6 +150,7 @@ export default class Timeline extends Vue {
               })
             )
           );
+        this.sort_cards();
       })
       .catch(e => {
         this.errors.push(
@@ -173,6 +177,7 @@ export default class Timeline extends Vue {
               })
             )
           );
+        this.sort_cards();
       })
       .catch(e => {
         this.errors.push(
