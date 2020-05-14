@@ -255,9 +255,9 @@ export default class Timeline extends Vue {
   get_card_due(a: CardContent) {
     switch (a.type) {
       case "CourseWork":
-        return moment({ ...a.content.dueDate, ...a.content.dueTime }).format(
-          this.date_format
-        );
+        return moment({ ...a.content.dueDate, ...a.content.dueTime })
+          .add(9, "hours")
+          .format(this.date_format);
       default:
         return "";
     }
