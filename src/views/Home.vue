@@ -1,6 +1,9 @@
 <template>
   <div>
     <h1>Fuwa Classroom Tools</h1>
+    <b-card title="全クラス タイムライン">
+      <b-button :to="{ name: 'timeline' }">Go</b-button>
+    </b-card>
   </div>
 </template>
 
