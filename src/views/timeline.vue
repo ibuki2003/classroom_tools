@@ -3,6 +3,7 @@
     <h1>{{ page_title }}</h1>
     <p>全クラスの投稿を時刻順に一覧表示します</p>
     <b-btn text="aaa" @click="get" :disabled="!logged_in">load</b-btn>
+    <b-spinner v-if="pending"></b-spinner>
 
     <b-alert
       variant="danger"
@@ -93,7 +94,7 @@ export default class Timeline extends Vue {
   cards: CardContent[] = [];
   errors: string[] = [];
   user_name_map: { [key: string]: string } = {};
-  fetch_status = "idle";
+  pending = false;
   get logged_in() {
     return is_token_available();
   }
@@ -107,6 +108,7 @@ export default class Timeline extends Vue {
     this.courses = {};
     this.cards = [];
     this.errors = [];
+    this.pending = true;
     api(axios())
       .v1.courses.$get({
         headers: { Authorization: "Bearer " + token }
@@ -122,6 +124,7 @@ export default class Timeline extends Vue {
       })
       .then(a => Promise.allSettled(a))
       .then(() => {
+        this.pending = false;
         this.cards.sort((a, b) =>
           moment(b.content.updateTime).diff(moment(a.content.updateTime))
         );
