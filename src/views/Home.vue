@@ -20,6 +20,6 @@ import { Vue, Component } from "vue-property-decorator";
 
 @Component
 export default class Home extends Vue {
-  readonly title = "";
+  readonly page_title = "";
 }
 </script>
