@@ -20,6 +20,19 @@ const routes: Array<RouteConfig> = [
     name: "timeline",
     component: () =>
       import(/*webpackChunkName: "timeline" */ "@/views/timeline.vue")
+  },
+  {
+    path: "/terms",
+    name: "terms",
+    component: () => import(/*webpackChunkName: "terms" */ "@/views/terms.vue")
+  },
+  {
+    path: "/privacy_policy",
+    name: "privacy_policy",
+    component: () =>
+      import(
+        /*webpackChunkName: "privacy_policy" */ "@/views/privacy_policy.vue"
+      )
   }
 ];
 
