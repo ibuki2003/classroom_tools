@@ -1,5 +1,5 @@
 import { CourseState, Course } from "./@types";
-import { AuthorizationHeader } from "../../../@types";
+import { AuthorizationHeader } from "@/apis/@types";
 
 export interface Methods {
   get: {
@@ -11,8 +11,8 @@ export interface Methods {
       pageToken?: string;
     };
     resBody: {
-      cources: Course[];
-      nextPageToken: string;
+      courses?: Course[];
+      nextPageToken?: string;
     };
     reqHeaders: AuthorizationHeader;
   };

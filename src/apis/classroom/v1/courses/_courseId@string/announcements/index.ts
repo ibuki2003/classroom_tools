@@ -1,5 +1,5 @@
 import { AnnouncementState, Announcement } from "./@types";
-import { AuthorizationHeader } from "../../../../../@types";
+import { AuthorizationHeader } from "@/apis/@types";
 
 export interface Methods {
   get: {
@@ -10,8 +10,8 @@ export interface Methods {
       pageToken?: string;
     };
     resBody: {
-      announcements: Announcement[];
-      nextPageToken: string;
+      announcements?: Announcement[];
+      nextPageToken?: string;
     };
     reqHeaders: AuthorizationHeader;
   };
