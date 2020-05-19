@@ -14,13 +14,17 @@
     >
       {{ error }}
     </b-alert>
+    <!-- eslint-disable rulesdir/vue-template-simple-expr -->
     <post-card
       v-for="a of cards"
       :key="get_card_id(a)"
       :content="a"
       :user_name="get_card_user_name(a)"
       :course_name="get_card_course_name(a)"
+      :value="get_fav_sel(a)"
+      @input="b => set_fav_sel(a, b)"
     />
+    <!-- eslint-enable rulesdir/vue-template-simple-expr -->
   </div>
 </template>
 
@@ -48,6 +52,7 @@ import { Announcement } from "@/apis/classroom/v1/courses/_courseId@string/annou
 import moment from "moment";
 import { CourseWork } from "@/apis/classroom/v1/courses/_courseId@string/courseWork/@type";
 import PostCard, { CardContent } from "@/components/post_card.vue";
+import { get_favs, set_fav } from "../libs/posts_favs";
 
 @Component({
   components: {
@@ -61,6 +66,11 @@ export default class Timeline extends Vue {
   errors: string[] = [];
   user_name_map: { [key: string]: string } = {};
   pending = false;
+  favs: { [key: string]: number } = {};
+
+  mounted() {
+    this.favs = get_favs();
+  }
   get logged_in() {
     return is_token_available();
   }
@@ -176,6 +186,15 @@ export default class Timeline extends Vue {
       return "";
     }
     return this.user_name_map[a.content.creatorUserId];
+  }
+
+  get_fav_sel(a: CardContent) {
+    return this.favs[this.get_card_id(a)];
+  }
+
+  set_fav_sel(a: CardContent, val: number) {
+    set_fav(this.get_card_id(a), val);
+    this.favs = get_favs();
   }
 }
 </script>

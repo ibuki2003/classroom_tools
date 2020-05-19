@@ -6,6 +6,11 @@
     >
       <b-card-title>{{ card_title }}</b-card-title>
       <b-badge>{{ course_name }}</b-badge>
+      <b-form-radio-group
+        v-model.number="fav_selected"
+        :options="fav_options"
+        plain
+      ></b-form-radio-group>
     </b-card-header>
     <b-card-body>
       <b-card-text>
@@ -39,6 +44,7 @@ import { Vue, Component, Prop } from "vue-property-decorator";
 import { Announcement } from "@/apis/classroom/v1/courses/_courseId@string/announcements/@types";
 import { CourseWork } from "@/apis/classroom/v1/courses/_courseId@string/courseWork/@type";
 import moment from "moment";
+import { selection_names, set_fav } from "@/libs/posts_favs";
 
 export type CardContent =
   | {
@@ -62,6 +68,9 @@ export default class PostCard extends Vue {
 
   @Prop({ required: true })
   readonly user_name!: string;
+
+  @Prop({ default: 0 })
+  readonly value!: number; // fav selection
 
   get card_title() {
     switch (this.content.type) {
@@ -117,6 +126,18 @@ export default class PostCard extends Vue {
       default:
         return "";
     }
+  }
+
+  get fav_options() {
+    return selection_names().map((v, i) => ({ value: i, text: v }));
+  }
+
+  get fav_selected() {
+    return this.value;
+  }
+
+  set fav_selected(val: number) {
+    this.$emit("input", val);
   }
 }
 </script>
