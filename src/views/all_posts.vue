@@ -14,41 +14,13 @@
     >
       {{ error }}
     </b-alert>
-
-    <b-card no-body class="m-2" v-for="a of cards" :key="get_card_id(a)">
-      <b-card-header
-        :header-bg-variant="get_card_variant(a)"
-        header-text-variant="white"
-      >
-        <b-card-title>{{ get_card_title(a) }}</b-card-title>
-        <b-badge>{{ get_card_course_name(a) }}</b-badge>
-      </b-card-header>
-      <b-card-body>
-        <b-card-text>
-          {{ get_card_user_name(a) }}
-        </b-card-text>
-        <b-card-text class="apply-newline">
-          {{ get_card_content(a) }}
-        </b-card-text>
-        <b-button :href="get_card_link(a)" class="card-link">開く</b-button>
-      </b-card-body>
-      <b-card-footer>
-        <ul class="no-icon-list">
-          <li>
-            <b-icon-clock v-b-tooltip.hover title="投稿" />
-            {{ get_card_created(a) }}
-          </li>
-          <li>
-            <b-icon-arrow-repeat v-b-tooltip.hover title="最終更新" />
-            {{ get_card_updated(a) }}
-          </li>
-          <li v-if="get_card_due(a)">
-            <b-icon-alarm v-b-tooltip.hover title="締切" />
-            {{ get_card_due(a) }}
-          </li>
-        </ul>
-      </b-card-footer>
-    </b-card>
+    <post-card
+      v-for="a of cards"
+      :key="get_card_id(a)"
+      :content="a"
+      :user_name="get_card_user_name(a)"
+      :course_name="get_card_course_name(a)"
+    />
   </div>
 </template>
 
@@ -75,21 +47,15 @@ import { Course } from "@/apis/classroom/v1/courses/@types";
 import { Announcement } from "@/apis/classroom/v1/courses/_courseId@string/announcements/@types";
 import moment from "moment";
 import { CourseWork } from "@/apis/classroom/v1/courses/_courseId@string/courseWork/@type";
+import PostCard, { CardContent } from "@/components/post_card.vue";
 
-type CardContent =
-  | {
-      type: "Announcement";
-      content: Announcement;
-    }
-  | {
-      type: "CourseWork";
-      content: CourseWork;
-    };
-
-@Component
+@Component({
+  components: {
+    PostCard
+  }
+})
 export default class Timeline extends Vue {
   readonly page_title = "全クラス タイムライン";
-  readonly date_format = "YYYY-MM-DD HH:mm";
   courses: { [key: string]: Course } = {};
   cards: CardContent[] = [];
   errors: string[] = [];
@@ -188,28 +154,9 @@ export default class Timeline extends Vue {
       });
   }
 
-  get_card_title(a: CardContent) {
-    switch (a.type) {
-      case "Announcement":
-        return "お知らせ";
-      case "CourseWork":
-        return "課題: " + a.content.title;
-    }
-  }
-
-  get_card_variant(a: CardContent) {
-    switch (a.type) {
-      case "Announcement":
-        return "secondary";
-      case "CourseWork":
-        return "primary";
-    }
-  }
-
   get_card_id(a: CardContent) {
     return a.type + a.content.id;
   }
-
   get_card_course_name(a: CardContent) {
     return this.courses[a.content.courseId].name;
   }
@@ -229,38 +176,6 @@ export default class Timeline extends Vue {
       return "";
     }
     return this.user_name_map[a.content.creatorUserId];
-  }
-
-  get_card_content(a: CardContent) {
-    switch (a.type) {
-      case "Announcement":
-        return a.content.text;
-      case "CourseWork":
-        return a.content.description;
-    }
-  }
-
-  get_card_link(a: CardContent) {
-    return a.content.alternateLink;
-  }
-
-  get_card_created(a: CardContent) {
-    return moment(a.content.creationTime).format(this.date_format);
-  }
-
-  get_card_updated(a: CardContent) {
-    return moment(a.content.updateTime).format(this.date_format);
-  }
-
-  get_card_due(a: CardContent) {
-    switch (a.type) {
-      case "CourseWork":
-        return moment({ ...a.content.dueDate, ...a.content.dueTime })
-          .add(9, "hours")
-          .format(this.date_format);
-      default:
-        return "";
-    }
   }
 }
 </script>

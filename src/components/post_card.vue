@@ -1,0 +1,122 @@
+<template>
+  <b-card no-body class="m-2">
+    <b-card-header
+      :header-bg-variant="card_variant"
+      header-text-variant="white"
+    >
+      <b-card-title>{{ card_title }}</b-card-title>
+      <b-badge>{{ course_name }}</b-badge>
+    </b-card-header>
+    <b-card-body>
+      <b-card-text>
+        {{ user_name }}
+      </b-card-text>
+      <b-card-text class="apply-newline">
+        {{ card_content }}
+      </b-card-text>
+      <b-button :href="card_link" class="card-link">開く</b-button>
+    </b-card-body>
+    <b-card-footer>
+      <ul class="no-icon-list">
+        <li>
+          <b-icon-clock v-b-tooltip.hover title="投稿" />
+          {{ card_created }}
+        </li>
+        <li>
+          <b-icon-arrow-repeat v-b-tooltip.hover title="最終更新" />
+          {{ card_updated }}
+        </li>
+        <li v-if="card_due">
+          <b-icon-alarm v-b-tooltip.hover title="締切" />
+          {{ card_due }}
+        </li>
+      </ul>
+    </b-card-footer>
+  </b-card>
+</template>
+<script lang="ts">
+import { Vue, Component, Prop } from "vue-property-decorator";
+import { Announcement } from "@/apis/classroom/v1/courses/_courseId@string/announcements/@types";
+import { CourseWork } from "@/apis/classroom/v1/courses/_courseId@string/courseWork/@type";
+import moment from "moment";
+
+export type CardContent =
+  | {
+      type: "Announcement";
+      content: Announcement;
+    }
+  | {
+      type: "CourseWork";
+      content: CourseWork;
+    };
+
+@Component
+export default class PostCard extends Vue {
+  readonly date_format = "YYYY-MM-DD HH:mm";
+
+  @Prop({ required: true })
+  readonly content!: CardContent;
+
+  @Prop({ required: true })
+  readonly course_name!: string;
+
+  @Prop({ required: true })
+  readonly user_name!: string;
+
+  get card_title() {
+    switch (this.content.type) {
+      case "Announcement":
+        return "お知らせ";
+      case "CourseWork":
+        return "課題: " + this.content.content.title;
+    }
+    return "";
+  }
+
+  get card_variant() {
+    switch (this.content.type) {
+      case "Announcement":
+        return "secondary";
+      case "CourseWork":
+        return "primary";
+    }
+    return "";
+  }
+
+  get card_content() {
+    switch (this.content.type) {
+      case "Announcement":
+        return this.content.content.text;
+      case "CourseWork":
+        return this.content.content.description;
+    }
+    return "";
+  }
+
+  get card_link() {
+    return this.content.content.alternateLink;
+  }
+
+  get card_created() {
+    return moment(this.content.content.creationTime).format(this.date_format);
+  }
+
+  get card_updated() {
+    return moment(this.content.content.updateTime).format(this.date_format);
+  }
+
+  get card_due() {
+    switch (this.content.type) {
+      case "CourseWork":
+        return moment({
+          ...this.content.content.dueDate,
+          ...this.content.content.dueTime
+        })
+          .add(9, "hours")
+          .format(this.date_format);
+      default:
+        return "";
+    }
+  }
+}
+</script>
