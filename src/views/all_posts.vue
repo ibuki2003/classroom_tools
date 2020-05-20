@@ -271,7 +271,7 @@ export default class Timeline extends Vue {
         headers: { Authorization: "Bearer " + token }
       })
       .then(d => {
-        d.courses?.slice(0, 1).forEach(c => this.$set(this.courses, c.id, c));
+        d.courses?.forEach(c => this.$set(this.courses, c.id, c));
       })
       .then(() => {
         return Object.keys(this.courses).flatMap(c => [
