@@ -69,7 +69,7 @@ import { Vue, Component, Prop } from "vue-property-decorator";
 import { Announcement } from "@/apis/classroom/v1/courses/_courseId@string/announcements/@types";
 import { CourseWork } from "@/apis/classroom/v1/courses/_courseId@string/courseWork/@type";
 import moment from "moment";
-import { selection_names, set_fav } from "@/libs/posts_favs";
+import { selection_names } from "@/libs/posts_favs";
 
 export type CardContent =
   | {
