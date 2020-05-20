@@ -81,7 +81,7 @@
       <b-tab title="タイムライン">
         <!-- eslint-disable rulesdir/vue-template-simple-expr -->
         <post-card
-          v-for="a of filtered_cards"
+          v-for="a of filter_cards(cards)"
           :key="get_card_id(a)"
           :content="a"
           :user_name="get_card_user_name(a)"
@@ -108,7 +108,7 @@
               @drop="kanban_drop"
             >
               <post-card
-                v-for="a in get_fav_cards(i)"
+                v-for="a in filter_cards(get_fav_cards(i))"
                 :key="get_card_id(a)"
                 :content="a"
                 :user_name="get_card_user_name(a)"
@@ -436,8 +436,7 @@ export default class Timeline extends Vue {
     return this.filter_user.map(a => a.text);
   }
 
-  get filtered_cards() {
-    let cards = this.cards;
+  filter_cards(cards: CardContent[]) {
     if (this.filter_course.length != 0) {
       const course_ids = new Set(this.filter_course.map(a => a.value));
       cards = cards.filter(card => course_ids.has(card.content.courseId));
