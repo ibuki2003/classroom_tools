@@ -4,7 +4,6 @@
       :header-bg-variant="card_variant"
       header-text-variant="white"
     >
-      {{ small }}
       <template v-if="!small">
         <b-card-title>{{ card_title }}</b-card-title>
       </template>
