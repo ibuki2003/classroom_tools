@@ -77,7 +77,7 @@
     >
       {{ error }}
     </b-alert>
-    <b-tabs>
+    <b-tabs v-if="!reload" v-model="tabIndex">
       <b-tab title="タイムライン">
         <!-- eslint-disable rulesdir/vue-template-simple-expr -->
         <post-card
@@ -98,7 +98,21 @@
             v-for="(l, i) in fav_list"
             :key="i"
           >
-            <h3>{{ l }}</h3>
+            <h3
+              class="kanban-column-title"
+              v-if="!is_editing_fav_name(i)"
+              @dblclick="edit_start_fav_name(i)"
+            >
+              {{ l }}
+            </h3>
+            <b-input
+              v-show="is_editing_fav_name(i)"
+              :data-id="i"
+              :value="l"
+              @blur="edit_end_fav_name(i, $event)"
+              @keyup.enter="edit_end_fav_name(i, $event)"
+              ref="fav_edit_box"
+            />
             <div
               class="kanban-list"
               :data-id="i"
@@ -165,6 +179,9 @@ ul.no-icon-list {
     flex-grow: 1;
     display: flex;
     flex-direction: column;
+    &-title {
+      cursor: pointer;
+    }
   }
   &-list {
     // height: 100%;
@@ -198,7 +215,12 @@ import { Announcement } from "@/apis/classroom/v1/courses/_courseId@string/annou
 import moment from "moment";
 import { CourseWork } from "@/apis/classroom/v1/courses/_courseId@string/courseWork/@type";
 import PostCard, { CardContent } from "@/components/post_card.vue";
-import { get_favs, set_fav, selection_names } from "../libs/posts_favs";
+import {
+  get_favs,
+  set_fav,
+  selection_names,
+  set_name
+} from "../libs/posts_favs";
 
 import Multiselect from "vue-multiselect";
 
@@ -215,15 +237,20 @@ interface Option {
 })
 export default class Timeline extends Vue {
   readonly page_title = "全クラス タイムライン";
+  reload = false;
   courses: { [key: string]: Course } = {};
   cards: CardContent[] = [];
   errors: string[] = [];
   user_name_map: { [key: string]: string } = {};
   pending = false;
   favs: { [key: string]: number } = {};
+  fav_list: string[] = [];
+
+  tabIndex = 0;
 
   mounted() {
     this.favs = get_favs();
+    this.fav_list = selection_names();
   }
   get logged_in() {
     return is_token_available();
@@ -244,7 +271,7 @@ export default class Timeline extends Vue {
         headers: { Authorization: "Bearer " + token }
       })
       .then(d => {
-        d.courses?.forEach(c => this.$set(this.courses, c.id, c));
+        d.courses?.slice(0, 1).forEach(c => this.$set(this.courses, c.id, c));
       })
       .then(() => {
         return Object.keys(this.courses).flatMap(c => [
@@ -343,10 +370,6 @@ export default class Timeline extends Vue {
     this.favs = get_favs();
   }
 
-  get fav_list() {
-    return selection_names();
-  }
-
   kanban_dragging_id?: string;
 
   get_fav_cards(idx: number) {
@@ -413,6 +436,7 @@ export default class Timeline extends Vue {
   filter_course: Option[] = [];
   filter_user: Option[] = [];
   filter_type: CardContent["type"][] = ["Announcement", "CourseWork"];
+  filter_fav: string[] = [];
   sort_mode: "created" | "updated" | "due" = "updated";
 
   get course_options() {
@@ -470,6 +494,52 @@ export default class Timeline extends Vue {
         break;
     }
     return cards;
+  }
+
+  fav_editing: number | null = null;
+
+  is_editing_fav_name(idx: number) {
+    return this.fav_editing === idx;
+  }
+
+  edit_start_fav_name(idx: number) {
+    this.fav_editing = idx;
+    this.$nextTick(() => this.on_edit_box_mounted());
+  }
+
+  on_edit_box_mounted() {
+    const editbox = this.$refs.fav_edit_box;
+    let elm: Element[];
+    if (Array.isArray(editbox)) {
+      if (editbox.length == 0) {
+        return;
+      }
+      if (((e): e is Element[] => e[0] instanceof Element)(editbox))
+        elm = editbox;
+      else elm = editbox.map(e => e.$el);
+    } else {
+      if (editbox instanceof Element) elm = [editbox];
+      else elm = [editbox.$el];
+    }
+    const target: HTMLElement[] = elm
+      .filter<HTMLElement>((e): e is HTMLElement => e instanceof HTMLElement)
+      .filter(
+        e =>
+          Number.parseInt(e.getAttribute("data-id") || "") === this.fav_editing
+      );
+    if (target.length) target[0].focus();
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  edit_end_fav_name(idx: number, e: any) {
+    this.fav_editing = null;
+    const target = e.currentTarget;
+    if (target === null) return;
+    if (!(target instanceof HTMLInputElement)) return;
+    set_name(idx, target.value);
+    this.fav_list = selection_names();
+    this.reload = true;
+    this.$nextTick(() => (this.reload = false));
   }
 }
 </script>
