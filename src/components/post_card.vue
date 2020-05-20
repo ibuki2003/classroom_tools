@@ -1,5 +1,5 @@
 <template>
-  <b-card no-body class="m-2">
+  <b-card no-body class="m-2" v-on="$listeners">
     <b-card-header
       :header-bg-variant="card_variant"
       header-text-variant="white"
