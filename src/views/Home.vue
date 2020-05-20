@@ -2,7 +2,7 @@
   <div>
     <h1>Fuwa Classroom Tools</h1>
     <b-card title="全クラス タイムライン">
-      <b-button :to="{ name: 'timeline' }">Go</b-button>
+      <b-button :to="{ name: 'all_posts' }">Go</b-button>
     </b-card>
     <b-nav>
       <b-nav-item :to="{ name: 'privacy_policy' }">

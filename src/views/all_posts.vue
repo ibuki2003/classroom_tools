@@ -77,46 +77,68 @@
     >
       {{ error }}
     </b-alert>
-
-    <b-card
-      no-body
-      class="m-2"
-      v-for="a of filtered_cards"
-      :key="get_card_id(a)"
-    >
-      <b-card-header
-        :header-bg-variant="get_card_variant(a)"
-        header-text-variant="white"
-      >
-        <b-card-title>{{ get_card_title(a) }}</b-card-title>
-        <b-badge>{{ get_card_course_name(a) }}</b-badge>
-      </b-card-header>
-      <b-card-body>
-        <b-card-text>
-          {{ get_card_user_name(a) }}
-        </b-card-text>
-        <b-card-text class="apply-newline">
-          {{ get_card_content(a) }}
-        </b-card-text>
-        <b-button :href="get_card_link(a)" class="card-link">開く</b-button>
-      </b-card-body>
-      <b-card-footer>
-        <ul class="no-icon-list">
-          <li>
-            <b-icon-clock v-b-tooltip.hover title="投稿" />
-            {{ get_card_created(a) }}
-          </li>
-          <li>
-            <b-icon-arrow-repeat v-b-tooltip.hover title="最終更新" />
-            {{ get_card_updated(a) }}
-          </li>
-          <li v-if="get_card_due(a)">
-            <b-icon-alarm v-b-tooltip.hover title="締切" />
-            {{ get_card_due(a) }}
-          </li>
-        </ul>
-      </b-card-footer>
-    </b-card>
+    <b-tabs v-if="!reload" v-model="tabIndex">
+      <b-tab title="タイムライン">
+        <!-- eslint-disable rulesdir/vue-template-simple-expr -->
+        <post-card
+          v-for="a of filter_cards(cards)"
+          :key="get_card_id(a)"
+          :content="a"
+          :user_name="get_card_user_name(a)"
+          :course_name="get_card_course_name(a)"
+          :value="get_fav_sel(get_card_id(a))"
+          @input="b => set_fav_sel(get_card_id(a), b)"
+        />
+        <!-- eslint-enable rulesdir/vue-template-simple-expr -->
+      </b-tab>
+      <b-tab title="Kanban">
+        <div class="kanban-container">
+          <b-container
+            class="kanban-column m-1 border shadow-sm rounded"
+            v-for="(l, i) in fav_list"
+            :key="i"
+          >
+            <h3
+              class="kanban-column-title"
+              v-if="!is_editing_fav_name(i)"
+              @dblclick="edit_start_fav_name(i)"
+            >
+              {{ l }}
+            </h3>
+            <b-input
+              v-show="is_editing_fav_name(i)"
+              :data-id="i"
+              :value="l"
+              @blur="edit_end_fav_name(i, $event)"
+              @keyup.enter="edit_end_fav_name(i, $event)"
+              ref="fav_edit_box"
+            />
+            <div
+              class="kanban-list"
+              :data-id="i"
+              @dragover.prevent
+              @dragenter="kanban_drag_enter"
+              @dragleave="kanban_drag_leave"
+              @drop="kanban_drop"
+            >
+              <post-card
+                v-for="a in filter_cards(get_fav_cards(i))"
+                :key="get_card_id(a)"
+                :content="a"
+                :user_name="get_card_user_name(a)"
+                :course_name="get_card_course_name(a)"
+                :value="get_fav_sel(get_card_id(a))"
+                :data-id="get_card_id(a)"
+                :small="true"
+                draggable
+                @dragstart="kanban_drag_start"
+                @dragend="kanban_drag_end"
+              />
+            </div>
+          </b-container>
+        </div>
+      </b-tab>
+    </b-tabs>
   </div>
 </template>
 
@@ -134,6 +156,53 @@ ul.no-icon-list {
 .card ul {
   margin-bottom: 0;
 }
+
+.kanban-contianer,
+.kanban-column,
+.kanban-list {
+  margin: 0;
+  padding: 0;
+}
+
+.kanban {
+  &-container {
+    height: 90vh;
+    overflow-x: auto;
+    display: flex;
+    justify-content: flex-start;
+    margin: 0.5rem;
+    h3 {
+      padding-left: 1rem;
+    }
+  }
+  &-column {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    &-title {
+      cursor: pointer;
+    }
+  }
+  &-list {
+    // height: 100%;
+    flex-grow: 1;
+    overflow-y: scroll;
+    width: 100%;
+    &:not([data-drag-depth="0"]) {
+      border-color: black;
+      box-shadow: 0rem 0rem 100rem 100rem 100rem black;
+    }
+    &.drag-over {
+      background-color: rgba(black, 0.1);
+    }
+    .drag-ghost {
+      opacity: 0.1;
+    }
+  }
+}
+.drag-ghost {
+  opacity: 0.1;
+}
 </style>
 
 <script lang="ts">
@@ -145,17 +214,15 @@ import { Course } from "@/apis/classroom/v1/courses/@types";
 import { Announcement } from "@/apis/classroom/v1/courses/_courseId@string/announcements/@types";
 import moment from "moment";
 import { CourseWork } from "@/apis/classroom/v1/courses/_courseId@string/courseWork/@type";
-import Multiselect from "vue-multiselect";
+import PostCard, { CardContent } from "@/components/post_card.vue";
+import {
+  get_favs,
+  set_fav,
+  selection_names,
+  set_name
+} from "../libs/posts_favs";
 
-type CardContent =
-  | {
-      type: "Announcement";
-      content: Announcement;
-    }
-  | {
-      type: "CourseWork";
-      content: CourseWork;
-    };
+import Multiselect from "vue-multiselect";
 
 interface Option {
   value: string;
@@ -164,17 +231,27 @@ interface Option {
 
 @Component({
   components: {
+    PostCard,
     Multiselect
   }
 })
 export default class Timeline extends Vue {
   readonly page_title = "全クラス タイムライン";
-  readonly date_format = "YYYY-MM-DD HH:mm";
+  reload = false;
   courses: { [key: string]: Course } = {};
   cards: CardContent[] = [];
   errors: string[] = [];
   user_name_map: { [key: string]: string } = {};
   pending = false;
+  favs: { [key: string]: number } = {};
+  fav_list: string[] = [];
+
+  tabIndex = 0;
+
+  mounted() {
+    this.favs = get_favs();
+    this.fav_list = selection_names();
+  }
   get logged_in() {
     return is_token_available();
   }
@@ -194,7 +271,7 @@ export default class Timeline extends Vue {
         headers: { Authorization: "Bearer " + token }
       })
       .then(d => {
-        d.courses?.forEach(c => this.$set(this.courses, c.id, c));
+        d.courses?.slice(0, 1).forEach(c => this.$set(this.courses, c.id, c));
       })
       .then(() => {
         return Object.keys(this.courses).flatMap(c => [
@@ -260,28 +337,9 @@ export default class Timeline extends Vue {
       });
   }
 
-  get_card_title(a: CardContent) {
-    switch (a.type) {
-      case "Announcement":
-        return "お知らせ";
-      case "CourseWork":
-        return "課題: " + a.content.title;
-    }
-  }
-
-  get_card_variant(a: CardContent) {
-    switch (a.type) {
-      case "Announcement":
-        return "secondary";
-      case "CourseWork":
-        return "primary";
-    }
-  }
-
   get_card_id(a: CardContent) {
     return a.type + a.content.id;
   }
-
   get_card_course_name(a: CardContent) {
     return this.courses[a.content.courseId].name;
   }
@@ -303,35 +361,70 @@ export default class Timeline extends Vue {
     return this.user_name_map[a.content.creatorUserId];
   }
 
-  get_card_content(a: CardContent) {
-    switch (a.type) {
-      case "Announcement":
-        return a.content.text;
-      case "CourseWork":
-        return a.content.description;
-    }
+  get_fav_sel(a: string) {
+    return this.favs[a];
   }
 
-  get_card_link(a: CardContent) {
-    return a.content.alternateLink;
+  set_fav_sel(a: string, val: number) {
+    set_fav(a, val);
+    this.favs = get_favs();
   }
 
-  get_card_created(a: CardContent) {
-    return moment(a.content.creationTime).format(this.date_format);
+  kanban_dragging_id?: string;
+
+  get_fav_cards(idx: number) {
+    return this.cards.filter(a => (this.favs[this.get_card_id(a)] || 0) == idx);
   }
 
-  get_card_updated(a: CardContent) {
-    return moment(a.content.updateTime).format(this.date_format);
+  change_drag_depth(elm: HTMLElement, diff: number) {
+    let val = Number.parseInt(elm.getAttribute("data-drag-depth") || "0");
+    val += diff;
+    if (val < 0) val = 0;
+    elm.setAttribute("data-drag-depth", val.toString());
   }
 
-  get_card_due(a: CardContent) {
-    switch (a.type) {
-      case "CourseWork":
-        return moment({ ...a.content.dueDate, ...a.content.dueTime })
-          .add(9, "hours")
-          .format(this.date_format);
-      default:
-        return "";
+  kanban_drag_enter(e: DragEvent) {
+    const target = e.currentTarget;
+    if (target === null) return;
+    if (!(target instanceof HTMLElement)) return;
+    this.change_drag_depth(target, 1);
+  }
+
+  kanban_drag_leave(e: DragEvent) {
+    const target = e.currentTarget;
+    if (target === null) return;
+    if (!(target instanceof HTMLElement)) return;
+    this.change_drag_depth(target, -1);
+  }
+
+  kanban_drag_start(e: DragEvent) {
+    const target = e.currentTarget;
+    if (target === null) return;
+    if (!(target instanceof HTMLElement)) return;
+    target.classList.add("drag-ghost");
+    const attr = target.attributes.getNamedItem("data-id");
+    if (attr) this.kanban_dragging_id = attr.value;
+  }
+
+  kanban_drag_end(e: DragEvent) {
+    const target = e.currentTarget;
+    if (target === null) return;
+    if (!(target instanceof HTMLElement)) return;
+    target.classList.remove("drag-ghost");
+    this.kanban_dragging_id = undefined;
+  }
+
+  kanban_drop(e: DragEvent) {
+    e.preventDefault();
+    const target = e.currentTarget;
+    if (!(target instanceof HTMLElement)) return;
+    this.change_drag_depth(target, -100); // remove
+    const attr = target.attributes.getNamedItem("data-id");
+    if (attr === null) return;
+    const targ_idx = Number.parseInt(attr.value);
+    if (this.kanban_dragging_id) {
+      this.set_fav_sel(this.kanban_dragging_id, targ_idx);
+      this.kanban_dragging_id = undefined;
     }
   }
 
@@ -343,6 +436,7 @@ export default class Timeline extends Vue {
   filter_course: Option[] = [];
   filter_user: Option[] = [];
   filter_type: CardContent["type"][] = ["Announcement", "CourseWork"];
+  filter_fav: string[] = [];
   sort_mode: "created" | "updated" | "due" = "updated";
 
   get course_options() {
@@ -366,8 +460,7 @@ export default class Timeline extends Vue {
     return this.filter_user.map(a => a.text);
   }
 
-  get filtered_cards() {
-    let cards = this.cards;
+  filter_cards(cards: CardContent[]) {
     if (this.filter_course.length != 0) {
       const course_ids = new Set(this.filter_course.map(a => a.value));
       cards = cards.filter(card => course_ids.has(card.content.courseId));
@@ -401,6 +494,52 @@ export default class Timeline extends Vue {
         break;
     }
     return cards;
+  }
+
+  fav_editing: number | null = null;
+
+  is_editing_fav_name(idx: number) {
+    return this.fav_editing === idx;
+  }
+
+  edit_start_fav_name(idx: number) {
+    this.fav_editing = idx;
+    this.$nextTick(() => this.on_edit_box_mounted());
+  }
+
+  on_edit_box_mounted() {
+    const editbox = this.$refs.fav_edit_box;
+    let elm: Element[];
+    if (Array.isArray(editbox)) {
+      if (editbox.length == 0) {
+        return;
+      }
+      if (((e): e is Element[] => e[0] instanceof Element)(editbox))
+        elm = editbox;
+      else elm = editbox.map(e => e.$el);
+    } else {
+      if (editbox instanceof Element) elm = [editbox];
+      else elm = [editbox.$el];
+    }
+    const target: HTMLElement[] = elm
+      .filter<HTMLElement>((e): e is HTMLElement => e instanceof HTMLElement)
+      .filter(
+        e =>
+          Number.parseInt(e.getAttribute("data-id") || "") === this.fav_editing
+      );
+    if (target.length) target[0].focus();
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  edit_end_fav_name(idx: number, e: any) {
+    this.fav_editing = null;
+    const target = e.currentTarget;
+    if (target === null) return;
+    if (!(target instanceof HTMLInputElement)) return;
+    set_name(idx, target.value);
+    this.fav_list = selection_names();
+    this.reload = true;
+    this.$nextTick(() => (this.reload = false));
   }
 }
 </script>

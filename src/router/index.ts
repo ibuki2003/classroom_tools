@@ -18,8 +18,13 @@ const routes: Array<RouteConfig> = [
   {
     path: "/timeline",
     name: "timeline",
+    redirect: { name: "all_posts" }
+  },
+  {
+    path: "/all_posts",
+    name: "all_posts",
     component: () =>
-      import(/*webpackChunkName: "timeline" */ "@/views/timeline.vue")
+      import(/*webpackChunkName: "all_posts" */ "@/views/all_posts.vue")
   },
   {
     path: "/terms",
