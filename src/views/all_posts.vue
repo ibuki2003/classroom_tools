@@ -52,6 +52,7 @@
                 :course_name="get_card_course_name(a)"
                 :value="get_fav_sel(get_card_id(a))"
                 :data-id="get_card_id(a)"
+                :small="true"
                 draggable
                 @dragstart="kanban_drag_start"
                 @dragend="kanban_drag_end"

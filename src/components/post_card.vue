@@ -4,9 +4,18 @@
       :header-bg-variant="card_variant"
       header-text-variant="white"
     >
-      <b-card-title>{{ card_title }}</b-card-title>
+      {{ small }}
+      <template v-if="!small">
+        <b-card-title>{{ card_title }}</b-card-title>
+      </template>
+      <template v-else>
+        <b-link :href="card_link" class="text-plain">
+          <b-card-title tag="h5">{{ card_title }}</b-card-title>
+        </b-link>
+      </template>
       <b-badge>{{ course_name }}</b-badge>
       <b-form-radio-group
+        v-if="!small"
         v-model.number="fav_selected"
         :options="fav_options"
         plain
@@ -16,10 +25,19 @@
       <b-card-text>
         {{ user_name }}
       </b-card-text>
-      <b-card-text class="apply-newline">
-        {{ card_content }}
-      </b-card-text>
-      <b-button :href="card_link" class="card-link">開く</b-button>
+      <b-link v-if="small" @click="toggle_text">
+        {{ text_visible ? "詳細を閉じる" : "詳細を開く" }}
+      </b-link>
+
+      <!-- Element to collapse -->
+      <b-collapse :visible="text_visible">
+        <b-card-text class="apply-newline">
+          {{ card_content }}
+        </b-card-text>
+      </b-collapse>
+      <b-button v-if="!small" :href="card_link" class="card-link">
+        開く
+      </b-button>
     </b-card-body>
     <b-card-footer>
       <ul class="no-icon-list">
@@ -39,6 +57,14 @@
     </b-card-footer>
   </b-card>
 </template>
+
+<style>
+.text-plain,
+.text-plain:hover {
+  color: inherit;
+}
+</style>
+
 <script lang="ts">
 import { Vue, Component, Prop } from "vue-property-decorator";
 import { Announcement } from "@/apis/classroom/v1/courses/_courseId@string/announcements/@types";
@@ -71,6 +97,19 @@ export default class PostCard extends Vue {
 
   @Prop({ default: 0 })
   readonly value!: number; // fav selection
+
+  @Prop({ default: false })
+  readonly small!: boolean;
+
+  text_visible = false;
+
+  mounted() {
+    if (!this.small) this.text_visible = true;
+  }
+
+  toggle_text() {
+    this.text_visible = !this.text_visible;
+  }
 
   get card_title() {
     switch (this.content.type) {
