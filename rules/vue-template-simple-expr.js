@@ -89,7 +89,8 @@ module.exports = {
   create(context) {
     return utils.defineTemplateBodyVisitor(context, {
       "VAttribute[directive=true]"(node) {
-        if (node.key.name.name == "slot") return;
+        if (node.key.name.name == "slot" || node.key.name.name == "slot-scope")
+          return;
 
         if (!node.value || !node.value.expression) return;
 
